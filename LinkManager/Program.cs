@@ -6,63 +6,68 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LinkManager
 {
-    public class Program
-    {
-        static void Main(string[] args)
-        {
-            IConfiguration config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: false)
-                .Build();
+   public class Program
+   {
+      public static void Main(string[] args)
+      {
+         RunAsync().GetAwaiter().GetResult();
+      }
 
-            RunAsync(config).GetAwaiter().GetResult();
-        }
+      private static async Task RunAsync()
+      {
+         var config = new ConfigurationBuilder()
+             .AddJsonFile("appsettings.json", optional: false)
+             .Build();
 
-        static async Task RunAsync(IConfiguration configuration)
-        {
-            using var services = ConfigureServices(configuration);
+         using var services = ConfigureServices(config);
 
-            var client = services.GetRequiredService<DiscordSocketClient>();
-            var commands = services.GetRequiredService<InteractionService>();
+         var client = services.GetRequiredService<DiscordSocketClient>();
+         var commands = services.GetRequiredService<InteractionService>();
 
-            client.Log += LogAsync;
-            commands.Log += LogAsync;
+         client.Log += LogAsync;
+         commands.Log += LogAsync;
 
-            client.Ready += async () =>
+         client.Ready += async () =>
+         {
+            if (config.GetValue<bool>("debug"))
             {
-                if (configuration.GetValue<bool>("debug"))
-                {
-                    await commands.RegisterCommandsToGuildAsync(configuration.GetValue<ulong>("devGuild"), deleteMissing: true);
-                }
-                else
-                {
-                    await commands.RegisterCommandsGloballyAsync(deleteMissing: true);
-                }
-            };
+               await commands.RegisterCommandsToGuildAsync(config.GetValue<ulong>("devGuild"), deleteMissing: true);
+            }
+            else
+            {
+               await commands.RegisterCommandsGloballyAsync(deleteMissing: true);
+            }
+         };
 
-            await services.GetRequiredService<CommandHandler>().InitializeAsync();
+         await services.GetRequiredService<CommandHandler>().InitializeAsync();
 
-            await client.LoginAsync(TokenType.Bot, configuration["token"]);
-            await client.StartAsync();
+         await client.LoginAsync(TokenType.Bot, config["token"]);
+         await client.StartAsync();
 
-            await Task.Delay(Timeout.Infinite);
-        }
+         await Task.Delay(Timeout.Infinite);
+      }
 
-        static Task LogAsync(LogMessage message)
-        {
-            Console.WriteLine(message.ToString());
-            return Task.CompletedTask;
-        }
+      private static Task LogAsync(LogMessage message)
+      {
+         Console.WriteLine(message.ToString());
+         return Task.CompletedTask;
+      }
 
-        static ServiceProvider ConfigureServices(IConfiguration config)
-        {
-            return new ServiceCollection()
-                        .AddSingleton(config)
-                        .AddSingleton<DiscordSocketClient>()
-                        .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
-                        .AddSingleton<CommandHandler>()
-                        .BuildServiceProvider();
-        }
-    }
+      private static ServiceProvider ConfigureServices(IConfiguration config)
+      {
+         var socketConfig = new DiscordSocketConfig()
+         {
+            GatewayIntents = GatewayIntents.None,
+         };
+
+         return new ServiceCollection()
+            .AddSingleton(config)
+            .AddSingleton(socketConfig)
+            .AddSingleton<DiscordSocketClient>()
+            .AddSingleton<InteractionService>()
+            .AddSingleton<CommandHandler>()
+            .BuildServiceProvider();
+      }
+   }
 }
-
 // <a href="https://www.flaticon.com/de/kostenlose-icons/link-kopieren">Profilbild von Freepik - Flaticon</a>
