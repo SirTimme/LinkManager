@@ -70,4 +70,3 @@ namespace LinkManager
       }
    }
 }
-// <a href="https://www.flaticon.com/de/kostenlose-icons/link-kopieren">Profilbild von Freepik - Flaticon</a>
