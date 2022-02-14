@@ -35,7 +35,7 @@ namespace LinkManager
                 }
                 else
                 {
-                    await commands.RegisterCommandsGloballyAsync(true);
+                    await commands.RegisterCommandsGloballyAsync(deleteMissing: true);
                 }
             };
 
@@ -64,3 +64,5 @@ namespace LinkManager
         }
     }
 }
+
+// <a href="https://www.flaticon.com/de/kostenlose-icons/link-kopieren">Profilbild von Freepik - Flaticon</a>
